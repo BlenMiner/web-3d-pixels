@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.james-frowen.simplewebtransport": {
+      "version": "git+https://github.com/James-Frowen/SimpleWebTransport?path=source",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "756cdf65b293bcf4356c43a58723f3ace96e87c7"
+    },
     "com.unity.burst": {
       "version": "1.8.9",
       "depth": 1,
