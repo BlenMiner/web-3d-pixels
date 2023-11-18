@@ -26,3 +26,4 @@ jobs:
           killall -9 3d-pixels-server
           dotnet build --property:Configuration=Release
           ./bin/Release/net6.0/3d-pixels-server & disown
+          exit
