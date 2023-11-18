@@ -79,33 +79,7 @@ namespace PixelsServer
             server.Start();
             Console.WriteLine("Done!");
 
-            Console.WriteLine("Press Enter to stop the server or '!' to restart the server...");
-
-            // Perform text input
-            for (;;)
-            {
-                string? line = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(line))
-                    break;
-
-                // Restart the server
-                if (line == "!")
-                {
-                    Console.Write("Server restarting...");
-                    server.Restart();
-                    Console.WriteLine("Done!");
-                }
-
-                // Multicast admin message to all sessions
-                line = "(admin) " + line;
-                server.MulticastBinary(line);
-            }
-
-            // Stop the server
-            Console.Write("Server stopping...");
-            server.Stop();
-            Console.WriteLine("Done!");
+            while (true) Thread.Sleep(2000);
         }
     }
 }

@@ -23,3 +23,6 @@ jobs:
           git reset --hard @{u}
           git clean -df
           git pull
+          dotnet build --property:Configuration=Release
+          pkill 3d-pixels-server
+          ./bin/Release/net6.0/3d-pixels-server &
