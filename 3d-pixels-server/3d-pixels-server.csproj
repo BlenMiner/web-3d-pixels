@@ -8,4 +8,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NetCoreServer" Version="7.0.0" />
+  </ItemGroup>
+
 </Project>
