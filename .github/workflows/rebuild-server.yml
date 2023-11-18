@@ -1,5 +1,9 @@
-name: remote ssh command
-on: [push, workflow_dispatch]
+name: rebuild-server
+on: 
+  push:
+    branches: ['main']
+    paths: ['3d-pixels-server/**']
+  workflow_dispatch:
 jobs:
 
   build:
