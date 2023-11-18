@@ -15,7 +15,7 @@ namespace PixelsServer
             Console.WriteLine($"Chat WebSocket session with Id {Id} connected!");
 
             // Send invite message
-            string message = "Hello from WebSocket chat! Please send a message or '!' to disconnect the client!";
+            string message = "Please send a message or '!' to disconnect the client!";
 
             SendBinaryAsync(message);
         }
