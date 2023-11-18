@@ -25,5 +25,5 @@ jobs:
           git pull
           killall -9 3d-pixels-server
           dotnet build --property:Configuration=Release
-          ./bin/Release/net6.0/3d-pixels-server & disown
+          nohup ./bin/Release/net6.0/3d-pixels-server > /dev/null 2>&1 &
           exit
