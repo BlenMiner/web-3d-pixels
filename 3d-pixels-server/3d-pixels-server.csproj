@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>_3d_pixels_server</RootNamespace>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>PixelsServer</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NetCoreServer" Version="7.0.0" />
+    <PackageReference Include="NetCoreServer" Version="6.7.0" />
   </ItemGroup>
 
 </Project>
