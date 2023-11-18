@@ -18,5 +18,8 @@ jobs:
         key: ${{ secrets.EC2 }}
         port: 22
         script: |
-          whoami
-          ls -al
+          [ -d "web-3d-pixels" ] || git clone https://github.com/BlenMiner/web-3d-pixels.git
+          cd "web-3d-pixels/3d-pixels-server"
+          git reset --hard @{u}
+          git clean -df
+          git pull
