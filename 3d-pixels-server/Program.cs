@@ -76,7 +76,7 @@ namespace PixelsServer
         static void Main(string[] args)
         {
             // WebSocket server port
-            int port = 443;
+            int port = 8080;
 
             if (args.Length > 0)
                 port = int.Parse(args[0]);
