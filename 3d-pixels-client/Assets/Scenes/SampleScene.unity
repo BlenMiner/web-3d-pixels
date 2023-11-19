@@ -1175,8 +1175,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
         type: 3}
+      propertyPath: m_ssl
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
+        type: 3}
       propertyPath: m_host
-      value: _c2fc3f311d7c0b1864601722c63a0075.3dpixels.riten.dev
+      value: 52.90.117.251
+      objectReference: {fileID: 0}
+    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
+        type: 3}
+      propertyPath: m_port
+      value: 443
       objectReference: {fileID: 0}
     - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
         type: 3}
