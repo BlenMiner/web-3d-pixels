@@ -23,7 +23,7 @@ jobs:
           git reset --hard @{u}
           git clean -df
           git pull
-          killall -9 3d-pixels-server
+          sudo killall -9 3d-pixels-server
           dotnet build --property:Configuration=Release
           sudo nohup ./bin/Release/net6.0/3d-pixels-server > /dev/null 2>&1 &
           exit

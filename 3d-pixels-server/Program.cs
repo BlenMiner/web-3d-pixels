@@ -3,6 +3,8 @@ using System;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 
 namespace PixelsServer
 {
@@ -41,6 +43,37 @@ namespace PixelsServer
         protected override void OnError(SocketError error)
         {
             Console.WriteLine($"Chat WebSocket session caught an error with code {error}");
+        }
+
+        protected override void OnReceivedRequest(HttpRequest request)
+        {
+            var host = request.GetHeader("Host");
+            if (host == null) return;
+
+            var isLocalHost = host.StartsWith("localhost");
+            var rootUrl = $"{(isLocalHost ? "http" : "https")}://{host}";
+
+            var unescapedPathAndQuery = Uri.UnescapeDataString(request.Url).Split('?');
+
+            string urlPath = unescapedPathAndQuery[0];
+            string urlQuery = unescapedPathAndQuery.Length > 1 ? unescapedPathAndQuery[1] : string.Empty;
+
+            switch (request.Method)
+            {
+                case "GET":
+
+                    if (urlPath == "/login")
+                    {
+                        SendResponseAsync(Response.MakeRedirectResponse("https://www.google.com/"));
+                    }
+
+                    if (urlPath == "/oauth")
+                    {
+                        SendResponseAsync(Response.MakeGetResponse("OAUTH page " + rootUrl, "text/html; charset=UTF-8"));
+                    }
+
+                    break;
+            }
         }
     }
 
@@ -90,6 +123,10 @@ namespace PixelsServer
             var server = new ChatServer(IPAddress.Any, port);
 
             server.AddStaticContent(GetWWWPath());
+
+            var homepage = server.Cache.Find("/index.html");
+            if (homepage.Item1)
+                server.Cache.Add("/", homepage.Item2);
 
             // Start the server
             Console.Write("Server starting...");
