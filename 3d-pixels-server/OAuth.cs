@@ -8,22 +8,15 @@ namespace PixelsServer
 {
     public static class OAuth
     {
-        public static string GetOAuthUrl(string clientId, string redirectUri, string scope, string state)
+        public static string GetOAuthUrl(string clientId, string redirectUri)
         {
-            return $"https://accounts.google.com/o/oauth2/v2/auth?" +
-                // $"scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly&" +
+            var query =
+                $"scope={Uri.EscapeDataString("https://www.googleapis.com/auth/userinfo.email")}&" +
                 $"response_type=code&" +
-                $"redirect_uri={redirectUri}&" +
-                $"client_id=client_id";
-        }
+                $"redirect_uri={Uri.EscapeDataString(redirectUri)}&" +
+                $"client_id={Uri.EscapeDataString(clientId)}";
 
-        static string GenerateGoogleAuthUrl()
-        {
-            // Replace with your client ID and redirect URI
-            string clientId = "YOUR_CLIENT_ID";
-            string redirectUri = "http://localhost:8080/oauth2callback";
-            string scopes = "openid%20email";
-            return $"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&scope={scopes}&access_type=offline";
+            return $"https://accounts.google.com/o/oauth2/v2/auth?{query}";
         }
     }
 }

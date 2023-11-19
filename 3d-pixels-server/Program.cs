@@ -1,16 +1,18 @@
 ﻿using NetCoreServer;
-using System;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
-using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 
 namespace PixelsServer
 {
-    class ChatSession : WsSession
+    class PixelsServerSession : WsSession
     {
-        public ChatSession(WsServer server) : base(server) { }
+        private readonly string m_clientId;
+
+        public PixelsServerSession(WsServer server, string oauthClientID) : base(server) 
+        {
+            m_clientId = oauthClientID;
+        }
 
         public override void OnWsConnected(HttpRequest request)
         {
@@ -64,11 +66,14 @@ namespace PixelsServer
 
                     if (urlPath == "/login")
                     {
-                        SendResponseAsync(Response.MakeRedirectResponse("https://www.google.com/"));
+                        var redirectAt = $"{rootUrl}/oauth";
+                        var oauthUrl = OAuth.GetOAuthUrl(m_clientId, redirectAt);
+                        SendResponseAsync(Response.MakeRedirectResponse(oauthUrl));
                     }
 
                     if (urlPath == "/oauth")
                     {
+                        // http://localhost:8080/oauth?code=4%2F0AfJohXkIxhgVtfvJOxEuC5xArAiMFMlM_g-GOw1mpmYh9vZGXLAVvhaCo6Y7E5IAs24bvg&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent
                         SendResponseAsync(Response.MakeGetResponse("OAUTH page " + rootUrl, "text/html; charset=UTF-8"));
                     }
 
@@ -77,11 +82,16 @@ namespace PixelsServer
         }
     }
 
-    class ChatServer : WsServer
+    class PixelsServer : WsServer
     {
-        public ChatServer(IPAddress address, int port) : base(address, port) { }
+        readonly string m_clientId;
 
-        protected override TcpSession CreateSession() { return new ChatSession(this); }
+        public PixelsServer(string oauth_clientId, IPAddress address, int port) : base(address, port) 
+        {
+            m_clientId = oauth_clientId;
+        }
+
+        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_clientId); }
 
         protected override void OnError(SocketError error)
         {
@@ -108,19 +118,18 @@ namespace PixelsServer
 
         static void Main(string[] args)
         {
+            const int PORT = 8080;
+
             // WebSocket server port
-            int port = 8080;
+            string oauthClientId = args.Length > 0 ? args[0] : "1046003701952-57on8uhpj7ba89afgo30ott3no9vgobj.apps.googleusercontent.com";
 
-            if (args.Length > 0)
-                port = int.Parse(args[0]);
-
-            Console.WriteLine($"WebSocket server port: {port}");
-            Console.WriteLine($"WebSocket server website: http://localhost:{port}/index.html");
+            Console.WriteLine($"WebSocket server port: {PORT}");
+            Console.WriteLine($"WebSocket server website: http://localhost:{PORT}/index.html");
 
             Console.WriteLine();
 
             // Create a new WebSocket server
-            var server = new ChatServer(IPAddress.Any, port);
+            var server = new PixelsServer(oauthClientId, IPAddress.Any, PORT);
 
             server.AddStaticContent(GetWWWPath());
 

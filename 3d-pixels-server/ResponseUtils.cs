@@ -8,7 +8,13 @@ namespace PixelsServer
         {
             response.Clear();
             response.SetBegin(301);
+
+            response.SetHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.SetHeader("Pragma", "no-cache");
+            response.SetHeader("Expires", "0");
+
             response.SetHeader("Location", url);
+
             response.SetContentType("text/html; charset=UTF-8");
             response.SetBody("Redirecting you...");
             return response;
