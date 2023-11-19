@@ -2,7 +2,7 @@ name: rebuild-server
 on: 
   push:
     branches: ['main']
-    paths: ['3d-pixels-server/**']
+    paths: ['3d-pixels-server/**', 'www/**']
   workflow_dispatch:
 jobs:
 

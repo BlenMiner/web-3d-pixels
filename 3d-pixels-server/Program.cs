@@ -58,21 +58,38 @@ namespace PixelsServer
 
     class Program
     {
+        static string GetWWWPath(string currentDirectory = ".")
+        {
+            var directoryInfo = new DirectoryInfo(currentDirectory);
+
+            if (directoryInfo.Name == "web-3d-pixels")
+                return Path.Combine(directoryInfo.FullName, "www");
+
+            var parent = directoryInfo.Parent;
+
+            if (parent == null)
+                return string.Empty;
+
+            return GetWWWPath(parent.FullName);
+        }
+
         static void Main(string[] args)
         {
             // WebSocket server port
-            int port = 8080;
+            int port = 443;
 
             if (args.Length > 0)
                 port = int.Parse(args[0]);
 
             Console.WriteLine($"WebSocket server port: {port}");
-            Console.WriteLine($"WebSocket server website: http://localhost:{port}/chat/index.html");
+            Console.WriteLine($"WebSocket server website: http://localhost:{port}/index.html");
 
             Console.WriteLine();
 
             // Create a new WebSocket server
             var server = new ChatServer(IPAddress.Any, port);
+
+            server.AddStaticContent(GetWWWPath());
 
             // Start the server
             Console.Write("Server starting...");
