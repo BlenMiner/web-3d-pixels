@@ -28,8 +28,16 @@ namespace PixelsServer
 
                 var json = JObject.Parse(File.ReadAllText(path));
 
-                var clientId = json["client_id"];
-                var clientSecret = json["client_secret"];
+                var webRoot = json["web"];
+
+                if (webRoot == null)
+                {
+                    Console.WriteLine($"Could not find web root in oauth.json");
+                    return secrets;
+                }
+
+                var clientId = webRoot["client_id"];
+                var clientSecret = webRoot["client_secret"];
 
                 if (clientId == null || clientSecret == null)
                 {
@@ -38,7 +46,7 @@ namespace PixelsServer
                 }
 
                 secrets.ClientID = clientId.ToString();
-                secrets.ClientSecret = clientId.ToString();
+                secrets.ClientSecret = clientSecret.ToString();
 
                 return secrets;
             }
@@ -52,7 +60,7 @@ namespace PixelsServer
         public static string GetOAuthUrl(string clientId, string redirectUri)
         {
             var query =
-                $"scope={Uri.EscapeDataString("https://www.googleapis.com/auth/userinfo.email")}&" +
+                $"scope=https://www.googleapis.com/auth/userinfo.email openid&" +
                 $"response_type=code&" +
                 $"redirect_uri={Uri.EscapeDataString(redirectUri)}&" +
                 $"client_id={Uri.EscapeDataString(clientId)}";

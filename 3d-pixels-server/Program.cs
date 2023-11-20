@@ -2,12 +2,16 @@
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json.Linq;
+using System.Net.Http.Headers;
 
 namespace PixelsServer
 {
     class PixelsServerSession : WsSession
     {
         private readonly OAuthSecrets m_secrets;
+
+        private readonly System.Net.Http.HttpClient m_client = new System.Net.Http.HttpClient();
 
         public PixelsServerSession(WsServer server, OAuthSecrets oauthSecrets) : base(server) 
         {
@@ -47,7 +51,7 @@ namespace PixelsServer
             Console.WriteLine($"Chat WebSocket session caught an error with code {error}");
         }
 
-        protected override void OnReceivedRequest(HttpRequest request)
+        protected override async void OnReceivedRequest(HttpRequest request)
         {
             var host = request.GetHeader("Host");
             if (host == null) return;
@@ -73,8 +77,35 @@ namespace PixelsServer
 
                     if (urlPath == "/oauth")
                     {
-                        // http://localhost:8080/oauth?code=4%2F0AfJohXkIxhgVtfvJOxEuC5xArAiMFMlM_g-GOw1mpmYh9vZGXLAVvhaCo6Y7E5IAs24bvg&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent
-                        SendResponseAsync(Response.MakeGetResponse("OAUTH page " + rootUrl, "text/html; charset=UTF-8"));
+                        var end = urlQuery.IndexOf('&');
+                        var code = urlQuery[5..end];
+
+                        var values = new Dictionary<string, string>
+                        {
+                            { "code", code },
+                            { "client_id", m_secrets.ClientID },
+                            { "client_secret", m_secrets.ClientSecret },
+                            { "redirect_uri", rootUrl + "/oauth" },
+                            { "grant_type", "authorization_code" }
+                        };
+
+                        var content = new FormUrlEncodedContent(values);
+
+                        var response = await m_client.PostAsync("https://oauth2.googleapis.com/token", content);
+
+                        var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                        var accessToken = json["access_token"]?.ToString();
+
+                        if (accessToken == null)
+                        {
+                            SendResponseAsync(Response.MakeGetResponse("OAUTH: ERROOORRRRRRRRRR", "text/html; charset=UTF-8"));
+                            break;
+                        }
+
+                        var userInfo = await m_client.GetAsync($"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}");
+                        var userInfoData = await userInfo.Content.ReadAsStringAsync();
+
+                        SendResponseAsync(Response.MakeGetResponse("OAUTH: " + userInfoData, "text/html; charset=UTF-8"));
                     }
 
                     break;
