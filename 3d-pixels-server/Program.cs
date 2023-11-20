@@ -7,11 +7,11 @@ namespace PixelsServer
 {
     class PixelsServerSession : WsSession
     {
-        private readonly string m_clientId;
+        private readonly OAuthSecrets m_secrets;
 
-        public PixelsServerSession(WsServer server, string oauthClientID) : base(server) 
+        public PixelsServerSession(WsServer server, OAuthSecrets oauthSecrets) : base(server) 
         {
-            m_clientId = oauthClientID;
+            m_secrets = oauthSecrets;
         }
 
         public override void OnWsConnected(HttpRequest request)
@@ -67,7 +67,7 @@ namespace PixelsServer
                     if (urlPath == "/login")
                     {
                         var redirectAt = $"{rootUrl}/oauth";
-                        var oauthUrl = OAuth.GetOAuthUrl(m_clientId, redirectAt);
+                        var oauthUrl = OAuth.GetOAuthUrl(m_secrets.ClientID, redirectAt);
                         SendResponseAsync(Response.MakeRedirectResponse(oauthUrl));
                     }
 
@@ -84,14 +84,14 @@ namespace PixelsServer
 
     class PixelsServer : WsServer
     {
-        readonly string m_clientId;
+        readonly OAuthSecrets m_oauth;
 
-        public PixelsServer(string oauth_clientId, IPAddress address, int port) : base(address, port) 
+        public PixelsServer(OAuthSecrets oauth, IPAddress address, int port) : base(address, port) 
         {
-            m_clientId = oauth_clientId;
+            m_oauth = oauth;
         }
 
-        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_clientId); }
+        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_oauth); }
 
         protected override void OnError(SocketError error)
         {
@@ -101,27 +101,28 @@ namespace PixelsServer
 
     class Program
     {
-        static string GetWWWPath(string currentDirectory = ".")
+        static string GetRootPath(string currentDirectory = ".")
         {
             var directoryInfo = new DirectoryInfo(currentDirectory);
 
             if (directoryInfo.Name == "web-3d-pixels")
-                return Path.Combine(directoryInfo.FullName, "www");
+                return directoryInfo.FullName;
 
             var parent = directoryInfo.Parent;
 
             if (parent == null)
                 return string.Empty;
 
-            return GetWWWPath(parent.FullName);
+            return GetRootPath(parent.FullName);
         }
 
         static void Main(string[] args)
         {
             const int PORT = 8080;
 
-            // WebSocket server port
-            string oauthClientId = args.Length > 0 ? args[0] : "1046003701952-57on8uhpj7ba89afgo30ott3no9vgobj.apps.googleusercontent.com";
+            var rootPath = GetRootPath();
+            var wwwPath = Path.Combine(rootPath, "www");
+            var oauthSecrets = OAuth.GetSecrets(args, rootPath);
 
             Console.WriteLine($"WebSocket server port: {PORT}");
             Console.WriteLine($"WebSocket server website: http://localhost:{PORT}/index.html");
@@ -129,9 +130,9 @@ namespace PixelsServer
             Console.WriteLine();
 
             // Create a new WebSocket server
-            var server = new PixelsServer(oauthClientId, IPAddress.Any, PORT);
+            var server = new PixelsServer(oauthSecrets, IPAddress.Any, PORT);
 
-            server.AddStaticContent(GetWWWPath());
+            server.AddStaticContent(wwwPath);
 
             var homepage = server.Cache.Find("/index.html");
             if (homepage.Item1)
