@@ -25,5 +25,5 @@ jobs:
           git pull
           sudo killall -9 3d-pixels-server
           dotnet build --property:Configuration=Release
-          sudo nohup ./bin/Release/net6.0/3d-pixels-server ${{ secrets.OAUTH_CLIENT_ID }} > /dev/null 2>&1 &
+          sudo nohup ./bin/Release/net6.0/3d-pixels-server ${{ secrets.OAUTH_CLIENT_ID }} ${{ secrets.OAUTH_SECRET }} > /dev/null 2>&1 &
           exit
