@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="main.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css">
     <title>Riten - 3D Pixels</title>
 </head>
 <body>
@@ -11,10 +12,20 @@
     <div class="landing-page">
     <header>
         <div class="container">
-        <a href="/"><img height="32px" src="https://i.ibb.co/1JF2X3N/Riten.png"></a>
-        <ul class="links">
-            <li>Sign In</li>
-        </ul>
+            <a href="/"><img height="32px" src="https://i.ibb.co/1JF2X3N/Riten.png"></a>
+            <div>
+                <span id="login-with-google">
+                    <button type="button" class="login-with-google-btn" >
+                        Sign in with Google
+                    </button>
+                </span>
+                <span id="logged-in-as">
+                    Logged in as <b>someemail@gmail.com</b>
+                    <a href="/logout" style="margin: 1em;">
+                        Sign-out
+                    </a>
+                </sp>
+            </div>
         </div>
     </header>
     <div class="content">
