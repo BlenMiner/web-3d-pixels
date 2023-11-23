@@ -28,10 +28,14 @@ namespace PixelsServer
             var rootPath = GetRootPath();
             var wwwPath = Path.Combine(rootPath, "www");
             var dataPath = Path.Combine(rootPath, "data");
+            var resourcesPath = Path.Combine(rootPath, "resources");
             var oauthSecrets = OAuth.GetSecrets(args, rootPath);
 
+            if (!Directory.Exists(dataPath))
+                Directory.CreateDirectory(dataPath);
+
             Console.WriteLine($"Creating database connection");
-            var sqliteConnection = new SqliteConnection($"Data Source={Path.Combine(dataPath, "pixels.db")}");
+            var sqliteConnection = new SqliteConnection($"Data Source={Path.Combine(dataPath, "pixels.sqlite")}");
 
             try
             {
@@ -39,18 +43,20 @@ namespace PixelsServer
             }
             catch (SqliteException ex)
             {
-                Console.WriteLine($"Error opening database connection:");
+                Console.WriteLine($"# Error opening database connection:");
                 Console.WriteLine(ex.Message);
                 return;
             }
 
-            Console.WriteLine($"WebSocket server port: {PORT}");
-            Console.WriteLine($"WebSocket server website: http://localhost:{PORT}/index.html");
+            Console.WriteLine($"Initialize database tables");
 
-            Console.WriteLine();
+            var db = new Database(sqliteConnection);
+
+            if (!db.InitDatabase(resourcesPath))
+                return;
 
             // Create a new WebSocket server
-            var server = new PixelsServer(oauthSecrets, IPAddress.Any, PORT);
+            var server = new PixelsServer(db, oauthSecrets, IPAddress.Any, PORT);
 
             server.AddStaticContent(wwwPath);
 
@@ -59,9 +65,9 @@ namespace PixelsServer
                 server.Cache.Add("/", homepage.Item2);
 
             // Start the server
-            Console.Write("Server starting...");
             server.Start();
-            Console.WriteLine("Done!");
+
+            Console.WriteLine($"Started server on port {PORT}");
 
             while (true) Thread.Sleep(2000);
         }

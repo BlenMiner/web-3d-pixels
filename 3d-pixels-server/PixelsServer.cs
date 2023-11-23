@@ -8,12 +8,15 @@ namespace PixelsServer
     {
         readonly OAuthSecrets m_oauth;
 
-        public PixelsServer(OAuthSecrets oauth, IPAddress address, int port) : base(address, port) 
+        readonly Database m_database;
+
+        public PixelsServer(Database db, OAuthSecrets oauth, IPAddress address, int port) : base(address, port) 
         {
             m_oauth = oauth;
+            m_database = db;
         }
 
-        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_oauth); }
+        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_database, m_oauth); }
 
         protected override void OnError(SocketError error)
         {
