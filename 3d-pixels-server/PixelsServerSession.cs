@@ -70,15 +70,15 @@ namespace PixelsServer
                 case "GET":
 
                     if (urlPath == "/login")
-                        HandleLogin(request, rootUrl, host);
+                        HandleLogin(request, rootUrl);
                     else if (urlPath == "/oauth")
-                        await HandleOAuthResponse(rootUrl, urlQuery);
+                        await HandleOAuthResponse(rootUrl, urlQuery, !isLocalHost);
 
                     break;
             }
         }
 
-        private void HandleLogin(HttpRequest req, string rootUrl, string host)
+        private bool TryGetCurrentSession(HttpRequest req, out string sessionValue)
         {
             for (int i = 0; i < req.Cookies; i++)
             {
@@ -86,34 +86,50 @@ namespace PixelsServer
 
                 if (key == "session")
                 {
-                    SendResponseAsync(Response.MakeGetResponse($"Session: {value}"));
-                    return;
+                    sessionValue = value;
+                    return true;
                 }
             }
 
-            var resp = Response.MakeGetResponse($"Total cookies: {req.Cookies}");
-            resp.SetCookie("session", "123", 5959, secure: false);
-            SendResponseAsync(resp);
-            return;
+            sessionValue = string.Empty;
+            return false;
+        }
+
+        private async void HandleLogin(HttpRequest req, string rootUrl)
+        {
+            if (TryGetCurrentSession(req, out var sessionId))
+            {
+                var sessionResponse = await m_database.ValidateSession(sessionId);
+
+                if (sessionResponse.Valid)
+                {
+                    SendResponseAsync(Response.MakeRedirectResponse(rootUrl));
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid session: {sessionId}");
+                }
+            }
 
             var redirectAt = $"{rootUrl}/oauth";
             var oauthUrl = OAuth.GetOAuthUrl(m_secrets.ClientID, redirectAt);
             SendResponseAsync(Response.MakeRedirectResponse(oauthUrl));
         }
 
-        private async Task HandleOAuthResponse(string rootUrl, string urlQuery)
+        private async Task HandleOAuthResponse(string rootUrl, string urlQuery, bool isSecure)
         {
             var end = urlQuery.IndexOf('&');
             var code = urlQuery[5..end];
 
             var values = new Dictionary<string, string>
-                        {
-                            { "code", code },
-                            { "client_id", m_secrets.ClientID },
-                            { "client_secret", m_secrets.ClientSecret },
-                            { "redirect_uri", rootUrl + "/oauth" },
-                            { "grant_type", "authorization_code" }
-                        };
+            {
+                { "code", code },
+                { "client_id", m_secrets.ClientID },
+                { "client_secret", m_secrets.ClientSecret },
+                { "redirect_uri", rootUrl + "/oauth" },
+                { "grant_type", "authorization_code" }
+            };
 
             var content = new FormUrlEncodedContent(values);
 
@@ -161,7 +177,7 @@ namespace PixelsServer
                 return;
             }
 
-            TimeSpan sessionDuration = TimeSpan.FromSeconds(60);
+            TimeSpan sessionDuration = TimeSpan.FromDays(90);
 
             var sessionInfo = new SessionInfo
             {
@@ -171,11 +187,13 @@ namespace PixelsServer
                 EndTime = DateTime.Now.Add(sessionDuration)
             };
 
-            m_database.CreateSession(sessionInfo);
+            if (!m_database.CreateSession(sessionInfo))
+            {
+                SendResponseAsync(Response.MakeGetResponse("OAUTH: Failed to create session", "text/html; charset=UTF-8"));
+                return;
+            }
 
-            var finalResponse = Response.MakeGetResponse("OAUTH: created session", "text/html; charset=UTF-8");
-
-            finalResponse.SetCookie("session", sessionInfo.ID, sessionDuration.Seconds);
+            var finalResponse = Response.MakeRedirectWithCookie(rootUrl, "session", sessionInfo.ID, (int)sessionDuration.TotalSeconds, isSecure);
 
             SendResponseAsync(finalResponse);
         }

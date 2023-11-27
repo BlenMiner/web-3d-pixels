@@ -29,6 +29,12 @@ namespace PixelsServer
         public DateTime? EndTime;
     }
 
+    public struct SessionResponse
+    {
+        public bool Valid;
+        public string UserID;
+    }
+
     public class Database
     {
         private const string INITIALIZE_TABLES_FILE = "initializeTables.sql";
@@ -43,7 +49,13 @@ namespace PixelsServer
             m_connection = connection;
         }
 
-        public bool InitDatabase(string resoucesPath)
+        static void HandleException(SqliteException ex, string title)
+        {
+            Console.WriteLine($"# {title}:");
+            Console.WriteLine(ex.Message);
+        }
+
+        public async Task<bool> InitDatabase(string resoucesPath)
         {
             if (m_isInitialized) return true;
 
@@ -56,31 +68,43 @@ namespace PixelsServer
 
             try
             {
-                cmd.ExecuteNonQuery();
+                await cmd.ExecuteNonQueryAsync();
             }
             catch (SqliteException ex)
             {
-                Console.WriteLine($"# Error initializing database tables:");
-                Console.WriteLine(ex.Message);
+                HandleException(ex, "Error initializing database tables");
                 return false;
             }
 
+            return await DoSessionCleanup(resoucesPath);
+        }
+
+        public async Task<bool> DoSessionCleanup(string resoucesPath)
+        {
             var deleteExpiredSessions = File.ReadAllText(Path.Combine(resoucesPath, DELETE_EXPIRED_SESSIONS_FILE));
 
-            var cmd2 = m_connection.CreateCommand();
-            cmd2.CommandText = deleteExpiredSessions;
+            var cmd = m_connection.CreateCommand();
+            cmd.CommandText = deleteExpiredSessions;
+            cmd.Parameters.AddWithValue("$now", ToDate(DateTime.Now));
 
             try
             {
-                cmd2.ExecuteNonQuery();
+                await cmd.ExecuteNonQueryAsync();
                 return true;
             }
             catch (SqliteException ex)
             {
-                Console.WriteLine($"# Error initializing database tables:");
-                Console.WriteLine(ex.Message);
+                HandleException(ex, "Error doing session cleanup");
                 return false;
             }
+        }
+
+        private string ToDate(DateTime? date)
+        {
+            if (date == null)
+                return "NULL";
+
+            return date.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.FFFFFFF");
         }
 
         public bool CreateSession(SessionInfo sessionToCreate)
@@ -89,7 +113,12 @@ namespace PixelsServer
 
             cmd.CommandText =
                 "INSERT INTO Sessions (SessionID, UserID, StartTime, EndTime) " +
-                $"VALUES ('{sessionToCreate.ID}', '{sessionToCreate.UserID}', {sessionToCreate.StartTime}, {sessionToCreate.EndTime})";
+                $"VALUES ($sessionId, $userId, $startTime, $endTime)";
+
+            cmd.Parameters.AddWithValue("$sessionId", sessionToCreate.ID);
+            cmd.Parameters.AddWithValue("$userId", sessionToCreate.UserID);
+            cmd.Parameters.AddWithValue("$startTime", ToDate(sessionToCreate.StartTime));
+            cmd.Parameters.AddWithValue("$endTime", ToDate(sessionToCreate.EndTime));
 
             try
             {
@@ -105,10 +134,41 @@ namespace PixelsServer
             }
             catch (SqliteException ex)
             {
-                Console.WriteLine($"# Error creating session:");
-                Console.WriteLine(ex.Message);
+                HandleException(ex, "Error creating session");
                 return false;
             }
+        }
+
+        public async Task<SessionResponse> ValidateSession(string sessionID)
+        {
+            var cmd = m_connection.CreateCommand();
+
+            cmd.CommandText = $"SELECT UserID FROM Sessions WHERE SessionID = $sessionId AND EndTime > $now";
+
+            cmd.Parameters.AddWithValue("$sessionId", sessionID);
+            cmd.Parameters.AddWithValue("$now", ToDate(DateTime.Now));
+
+            try
+            {
+                using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    var userId = reader.GetString(0);
+
+                    return new SessionResponse
+                    {
+                        Valid = true,
+                        UserID = userId
+                    };
+                }
+            }
+            catch (SqliteException ex)
+            {
+                HandleException(ex, "Error validating session");
+            }
+
+            return default;
         }
 
         public async Task<bool> CreateUserIfDoesntExist(UserInfo userToCreate)
@@ -117,10 +177,16 @@ namespace PixelsServer
 
             cmd.CommandText =
                 "INSERT INTO Users (UserID, Email, AvatarURL, Role, IsBanned, BannedTime, LastVoxelModificationTime, CreatedTime) " +
-                $"VALUES ('{userToCreate.ID}', '{userToCreate.Email}', '{userToCreate.AvatarURL}', '{userToCreate.Role}', {(userToCreate.IsBanned ? 1 : 0)}, " +
-                        $"'{(userToCreate.BannedTime == null ? "NULL" : userToCreate.BannedTime.Value.ToUniversalTime())}'," +
-                        $"'{userToCreate.LastVoxelModificationTime.ToUniversalTime()}'," +
-                        $"'{userToCreate.CreatedTime.ToUniversalTime()}')";
+                $"VALUES ($userId, $email, $avatarUrl, $role, $isBanned, $bannedTime, $lastVoxelModificationTime, $createdTime)";
+
+            cmd.Parameters.AddWithValue("$userId", userToCreate.ID);
+            cmd.Parameters.AddWithValue("$email", userToCreate.Email);
+            cmd.Parameters.AddWithValue("$avatarUrl", userToCreate.AvatarURL);
+            cmd.Parameters.AddWithValue("$role", userToCreate.Role);
+            cmd.Parameters.AddWithValue("$isBanned", userToCreate.IsBanned);
+            cmd.Parameters.AddWithValue("$bannedTime", ToDate(userToCreate.BannedTime));
+            cmd.Parameters.AddWithValue("$lastVoxelModificationTime", ToDate(userToCreate.LastVoxelModificationTime));
+            cmd.Parameters.AddWithValue("$createdTime", ToDate(userToCreate.CreatedTime));
 
             try
             {
@@ -140,9 +206,7 @@ namespace PixelsServer
                 if (ex.SqliteErrorCode == 19)
                     return true;
 
-                Console.WriteLine($"# Error creating user:");
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(cmd.CommandText);
+                HandleException(ex, "Error creating user");
                 return false;
             }
         }

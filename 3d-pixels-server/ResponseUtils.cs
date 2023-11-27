@@ -16,7 +16,24 @@ namespace PixelsServer
             response.SetHeader("Location", url);
 
             response.SetContentType("text/html; charset=UTF-8");
-            response.SetBody("Redirecting you...");
+            response.SetBody($"Redirecting you to {url} ...");
+            return response;
+        }
+
+        public static HttpResponse MakeRedirectWithCookie(this HttpResponse response, string url, string cookieName, string cookieValue, int durationInSeconds, bool secure)
+        {
+            response.Clear();
+            response.SetBegin(301);
+
+            response.SetHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.SetHeader("Pragma", "no-cache");
+            response.SetHeader("Expires", "0");
+
+            response.SetHeader("Location", url);
+            response.SetCookie(cookieName, cookieValue, durationInSeconds, secure: secure);
+            response.SetContentType("text/html; charset=UTF-8");
+            response.SetBody($"Redirecting you to {url} ...");
+
             return response;
         }
 

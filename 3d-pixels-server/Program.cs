@@ -21,7 +21,31 @@ namespace PixelsServer
             return GetRootPath(parent.FullName);
         }
 
+        static async void GarbageScheduler(Database db, string ressources)
+        {
+            const long SECONDS_IN_A_DAY = 60 * 60 * 24;
+            long waitedSeconds = 0;
+
+            while (true)
+            {
+                Thread.Sleep(5000);
+                waitedSeconds += 5;
+
+                if (waitedSeconds > SECONDS_IN_A_DAY)
+                {
+                    Console.WriteLine("Cleaning up sessions");
+                    await db.DoSessionCleanup(ressources);
+                    waitedSeconds = 0;
+                }
+            }
+        }
+
         static void Main(string[] args)
+        {
+            DoMain(args);
+        }
+
+        static async void DoMain(string[] args)
         {
             const int PORT = 8080;
 
@@ -52,7 +76,7 @@ namespace PixelsServer
 
             var db = new Database(sqliteConnection);
 
-            if (!db.InitDatabase(resourcesPath))
+            if (!(await db.InitDatabase(resourcesPath)))
                 return;
 
             // Create a new WebSocket server
@@ -69,7 +93,7 @@ namespace PixelsServer
 
             Console.WriteLine($"Started server on port {PORT}");
 
-            while (true) Thread.Sleep(2000);
+            GarbageScheduler(db, resourcesPath);
         }
     }
 }
