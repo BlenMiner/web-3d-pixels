@@ -60,9 +60,21 @@ namespace PixelsServer
 
             var dbPath = Path.Combine(dataPath, "pixels.sqlite");
 
-            Console.WriteLine($"Creating database connection at:");
-            var sqliteConnection = new SqliteConnection($"Data Source='{dbPath}'");
-            Console.WriteLine($"{dbPath}");
+            Console.WriteLine($"Creating database connection");
+
+            SqliteConnection sqliteConnection;
+
+            try
+            {
+                sqliteConnection = new SqliteConnection($"Data Source='{dbPath}'");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"# Error creating connection object:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+
 
             try
             {
