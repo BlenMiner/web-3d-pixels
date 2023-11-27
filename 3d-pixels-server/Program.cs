@@ -58,14 +58,22 @@ namespace PixelsServer
             if (!Directory.Exists(dataPath))
                 Directory.CreateDirectory(dataPath);
 
-            Console.WriteLine($"Creating database connection");
-            var sqliteConnection = new SqliteConnection($"Data Source={Path.Combine(dataPath, "pixels.sqlite")}");
+            var dbPath = Path.Combine(dataPath, "pixels.sqlite");
+
+            Console.WriteLine($"Creating database connection at:\n{dbPath}");
+            var sqliteConnection = new SqliteConnection($"Data Source={dbPath}");
 
             try
             {
                 sqliteConnection.Open();
             }
             catch (SqliteException ex)
+            {
+                Console.WriteLine($"# Error opening database connection:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine($"# Error opening database connection:");
                 Console.WriteLine(ex.Message);
