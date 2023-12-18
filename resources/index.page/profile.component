@@ -1,0 +1,6 @@
+<span id="logged-in-as">
+    Logged in as <b>{PROFILE.EMAIL}</b>
+    <a href="/logout" style="margin: 1em;">
+        Sign-out
+    </a>
+</span>

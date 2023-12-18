@@ -1,0 +1,5 @@
+<span id="login-with-google">
+    <button onclick="window.location.href = '/login';" type="button" class="login-with-google-btn">
+        Sign in with Google
+    </button>
+</span>

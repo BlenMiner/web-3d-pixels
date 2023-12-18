@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using NetCoreServer;
 using System.Net;
 
 namespace PixelsServer
@@ -45,6 +46,8 @@ namespace PixelsServer
             DoMain(args);
         }
 
+        static RessourcesCache? s_ressourcesCache;
+
         static async void DoMain(string[] args)
         {
             const int PORT = 8080;
@@ -54,6 +57,8 @@ namespace PixelsServer
             var dataPath = Path.Combine(rootPath, "data");
             var resourcesPath = Path.Combine(rootPath, "resources");
             var oauthSecrets = OAuth.GetSecrets(args, rootPath);
+
+            s_ressourcesCache = new RessourcesCache(resourcesPath);
 
             if (!Directory.Exists(dataPath))
                 Directory.CreateDirectory(dataPath);
@@ -101,13 +106,13 @@ namespace PixelsServer
                 return;
 
             // Create a new WebSocket server
-            var server = new PixelsServer(db, oauthSecrets, IPAddress.Any, PORT);
+            var server = new PixelsServer(s_ressourcesCache, db, oauthSecrets, IPAddress.Any, PORT);
 
             server.AddStaticContent(wwwPath);
 
-            var homepage = server.Cache.Find("/index.html");
+            /*var homepage = server.Cache.Find("/index.html");
             if (homepage.Item1)
-                server.Cache.Add("/", homepage.Item2);
+                server.Cache.Add("/", homepage.Item2);*/
 
             // Start the server
             server.Start();

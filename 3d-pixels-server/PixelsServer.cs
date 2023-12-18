@@ -10,13 +10,16 @@ namespace PixelsServer
 
         readonly Database m_database;
 
-        public PixelsServer(Database db, OAuthSecrets oauth, IPAddress address, int port) : base(address, port) 
+        readonly RessourcesCache m_cache;
+
+        public PixelsServer(RessourcesCache cache, Database db, OAuthSecrets oauth, IPAddress address, int port) : base(address, port) 
         {
             m_oauth = oauth;
             m_database = db;
+            m_cache = cache;
         }
 
-        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_database, m_oauth); }
+        protected override TcpSession CreateSession() { return new PixelsServerSession(this, m_cache, m_database, m_oauth); }
 
         protected override void OnError(SocketError error)
         {

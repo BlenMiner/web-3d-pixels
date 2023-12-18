@@ -13,10 +13,13 @@ namespace PixelsServer
 
         private readonly Database m_database;
 
-        public PixelsServerSession(WsServer server, Database db, OAuthSecrets oauthSecrets) : base(server) 
+        private readonly RessourcesCache m_cache;
+
+        public PixelsServerSession(WsServer server, RessourcesCache cache, Database db, OAuthSecrets oauthSecrets) : base(server) 
         {
             m_secrets = oauthSecrets;
             m_database = db;
+            m_cache = cache;
         }
 
         public override void OnWsConnected(HttpRequest request)
@@ -67,13 +70,84 @@ namespace PixelsServer
 
             switch (request.Method)
             {
-                case "GET":
+                case "GET": await HandleGETRequests(request, isLocalHost, rootUrl, urlPath, urlQuery); break;
+            }
+        }
 
-                    if (urlPath == "/login")
-                        HandleLogin(request, rootUrl);
-                    else if (urlPath == "/oauth")
-                        await HandleOAuthResponse(rootUrl, urlQuery, !isLocalHost);
+        async Task<bool> IsLoggedIn(HttpRequest request)
+        {
+            if (TryGetCurrentSession(request, out var sessionId))
+            {
+                var sessionResp = await m_database.ValidateSession(sessionId);
+                return sessionResp.Valid;
+            }
 
+            return false;
+        }
+
+        async Task<UserInfo?> GetLoggedInUser(HttpRequest request)
+        {
+            if (TryGetCurrentSession(request, out var sessionId))
+            {
+                var sessionResp = await m_database.ValidateSession(sessionId);
+
+                if (sessionResp.Valid)
+                {
+                    var data = await m_database.GetUserInfoFromID(sessionResp.UserID);
+
+                    if (data.HasValue)
+                        return data.Value;
+                }
+            }
+
+            return null;
+        }
+
+        private async Task HandleGETRequests(HttpRequest request, bool isLocalHost, string rootUrl, string urlPath, string urlQuery)
+        {
+            switch (urlPath)
+            {
+                case "/":
+                    var page = m_cache.ReadAllText("index.page/content.html");
+                    string topRightNavContent;
+
+                    var user = await GetLoggedInUser(request);
+
+                    if (user.HasValue)
+                    {
+                        var profileComp = m_cache.ReadAllText("index.page/profile.component").Replace("{PROFILE.EMAIL}", user.Value.Email);
+                        topRightNavContent = profileComp;
+                    }
+                    else
+                    {
+                        var signInComp = m_cache.ReadAllText("index.page/signin.component");
+                        topRightNavContent = signInComp;
+                    }
+
+                    page = page.Replace("{TOP-RIGHT-NAV}", topRightNavContent);
+
+                    SendResponseAsync(Response.MakeHTMLWithoutCaching(page));
+                    break;
+                case "/logout":
+
+                    if (TryGetCurrentSession(request, out var sessionId) && await m_database.DeleteSessionId(sessionId))
+                    {
+                        SendResponseAsync(Response.MakeRedirectResponse(rootUrl));
+                    }
+                    else
+                    {
+                        SendResponseAsync(Response.MakeGetResponse("403", "text/html; charset=UTF-8"));
+                    }
+
+                    break;
+                case "/login":
+                    HandleLogin(request, rootUrl);
+                    break;
+                case "/oauth":
+                    await HandleOAuthResponse(rootUrl, urlQuery, !isLocalHost);
+                    break;
+                default:
+                    SendResponseAsync(Response.MakeGetResponse("404", "text/html; charset=UTF-8"));
                     break;
             }
         }
@@ -105,10 +179,6 @@ namespace PixelsServer
                 {
                     SendResponseAsync(Response.MakeRedirectResponse(rootUrl));
                     return;
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid session: {sessionId}");
                 }
             }
 
@@ -186,6 +256,8 @@ namespace PixelsServer
                 StartTime = DateTime.Now,
                 EndTime = DateTime.Now.Add(sessionDuration)
             };
+
+            await m_database.DeleteAnyExistingSessions(id);
 
             if (!m_database.CreateSession(sessionInfo))
             {

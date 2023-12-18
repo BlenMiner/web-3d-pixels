@@ -107,6 +107,55 @@ namespace PixelsServer
             return date.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.FFFFFFF");
         }
 
+        public async Task<bool> DeleteAnyExistingSessions(string userId)
+        {
+            var cmd = m_connection.CreateCommand();
+
+            cmd.CommandText = "DELETE FROM Sessions WHERE UserID = $userId;";
+
+            cmd.Parameters.AddWithValue("$userId", userId);
+
+            try
+            {
+                int deleted = await cmd.ExecuteNonQueryAsync();
+
+                if (deleted > 0)
+                    Console.WriteLine($"Deleted {deleted} previous sessions.");
+                else return false;
+            }
+            catch (SqliteException ex)
+            {
+                HandleException(ex, "Error deleting previous session");
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> DeleteSessionId(string sessionId)
+        {
+            var cmd = m_connection.CreateCommand();
+
+            cmd.CommandText = "DELETE FROM Sessions WHERE SessionID = $sessionId;";
+            cmd.Parameters.AddWithValue("$sessionId", sessionId);
+
+            try
+            {
+                int deleted = await cmd.ExecuteNonQueryAsync();
+
+                if (deleted > 0)
+                    Console.WriteLine($"Deleted {deleted} sessions.");
+                else return false;
+            }
+            catch (SqliteException ex)
+            {
+                HandleException(ex, "Error deleting previous session");
+                return false;
+            }
+
+            return true;
+        }
+
         public bool CreateSession(SessionInfo sessionToCreate)
         {
             var cmd = m_connection.CreateCommand();
@@ -169,6 +218,42 @@ namespace PixelsServer
             }
 
             return default;
+        }
+
+        public async Task<UserInfo?> GetUserInfoFromID(string userId)
+        {
+            var cmd = m_connection.CreateCommand();
+
+            cmd.CommandText = $"SELECT * FROM Users WHERE UserID = $userId";
+
+            cmd.Parameters.AddWithValue("$userId", userId);
+
+            try
+            {
+                using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    UserInfo user;
+
+                    user.ID = reader.GetString(0);
+                    user.Email = reader.GetString(1);
+                    user.AvatarURL = reader.GetString(2);
+                    user.Role = (Role)reader.GetInt32(3);
+                    user.IsBanned = reader.GetBoolean(4);
+                    user.BannedTime = reader.GetString(5) == "NULL" ? null : reader.GetDateTime(5);
+                    user.LastVoxelModificationTime = reader.GetDateTime(6);
+                    user.CreatedTime = reader.GetDateTime(7);
+
+                    return user;
+                }
+            }
+            catch (SqliteException ex)
+            {
+                HandleException(ex, "Error getting user info");
+            }
+
+            return null;
         }
 
         public async Task<bool> CreateUserIfDoesntExist(UserInfo userToCreate)
