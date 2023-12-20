@@ -68,6 +68,13 @@ namespace PixelsServer
             string urlPath = unescapedPathAndQuery[0];
             string urlQuery = unescapedPathAndQuery.Length > 1 ? unescapedPathAndQuery[1] : string.Empty;
 
+            for (int i = 0; i < request.Headers; i++)
+            {
+                (string key, string value) = request.Header(i);
+                if (key == "Upgrade" && value == "websocket")
+                    return;
+            }
+
             switch (request.Method)
             {
                 case "GET": await HandleGETRequests(request, isLocalHost, rootUrl, urlPath, urlQuery); break;
