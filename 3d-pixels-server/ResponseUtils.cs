@@ -46,7 +46,7 @@ namespace PixelsServer
             response.SetHeader("Expires", "0");
 
             response.SetHeader("Location", url);
-            response.SetCookie(cookieName, cookieValue, durationInSeconds, secure: secure);
+            response.SetCookie(cookieName, cookieValue, durationInSeconds, strict: false, secure: secure);
             response.SetContentType("text/html; charset=UTF-8");
             response.SetBody($"Redirecting you to {url} ...");
 
