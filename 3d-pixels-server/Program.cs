@@ -108,7 +108,7 @@ namespace PixelsServer
             // Create a new WebSocket server
             var server = new PixelsServer(s_ressourcesCache, db, oauthSecrets, IPAddress.Any, PORT);
 
-            server.AddStaticContent(wwwPath);
+            server.AddStaticContentUnityCompatible(wwwPath);
 
             /*var homepage = server.Cache.Find("/index.html");
             if (homepage.Item1)
