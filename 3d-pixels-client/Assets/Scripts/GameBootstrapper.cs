@@ -36,8 +36,6 @@ public class GameBootstrapper : MonoBehaviour
     private void Start()
     {
         bool isUsingLocalHostDomain = false;
-
-        Debug.Log(Application.absoluteURL);
         
         if (Uri.TryCreate(Application.absoluteURL, UriKind.Absolute, out var result))
             isUsingLocalHostDomain = result.Host.Contains("localhost");
