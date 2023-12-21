@@ -58,3 +58,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_client: {fileID: 7752941384277873744}
+  m_useLocalhost: 0
+  m_ssl: 1
+  m_host: 3dpixels.riten.dev
+  m_port: 443
+  m_chatClient: {fileID: 0}

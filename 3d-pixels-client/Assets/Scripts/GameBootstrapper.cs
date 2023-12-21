@@ -3,6 +3,9 @@ using UnityEngine;
 public class GameBootstrapper : MonoBehaviour
 {
     [SerializeField] private NetworkClient m_client;
+    [SerializeField] private bool m_useLocalhost;
+
+    [Header("Remote Server Info")]
     [SerializeField] private bool m_ssl;
     [SerializeField] private string m_host = "localhost";
     [SerializeField] private int m_port = 8080;
@@ -31,7 +34,13 @@ public class GameBootstrapper : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_EDITOR
+        if (m_useLocalhost)
+             m_client.Connect();
+        else m_client.Connect(m_ssl, m_host, m_port);
+#else
         m_client.Connect(m_ssl, m_host, m_port);
+#endif
     }
 
     private void OnDestroy()

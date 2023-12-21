@@ -1337,24 +1337,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
         type: 3}
-      propertyPath: m_ssl
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
-        type: 3}
-      propertyPath: m_host
-      value: localhost
-      objectReference: {fileID: 0}
-    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
-        type: 3}
-      propertyPath: m_port
-      value: 8080
-      objectReference: {fileID: 0}
-    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
-        type: 3}
       propertyPath: m_chatClient
       value: 
       objectReference: {fileID: 391799526}
+    - target: {fileID: 2530163867034958643, guid: 84488ffec075cd0498e2642533b000e1,
+        type: 3}
+      propertyPath: m_useLocalhost
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6465356862352285968, guid: 84488ffec075cd0498e2642533b000e1,
         type: 3}
       propertyPath: m_LocalPosition.x
