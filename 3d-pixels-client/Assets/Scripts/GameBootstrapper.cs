@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class GameBootstrapper : MonoBehaviour
@@ -34,13 +35,18 @@ public class GameBootstrapper : MonoBehaviour
 
     private void Start()
     {
-#if UNITY_EDITOR
-        if (m_useLocalhost)
+        bool isUsingLocalHostDomain = false;
+
+        Debug.Log(Application.absoluteURL);
+        
+        if (Uri.TryCreate(Application.absoluteURL, UriKind.Absolute, out var result))
+            isUsingLocalHostDomain = result.Host.Contains("localhost");
+        
+        bool shouldUseLocal = (m_useLocalhost && Application.isEditor) || isUsingLocalHostDomain;
+        
+        if (shouldUseLocal)
              m_client.Connect();
         else m_client.Connect(m_ssl, m_host, m_port);
-#else
-        m_client.Connect(m_ssl, m_host, m_port);
-#endif
     }
 
     private void OnDestroy()
