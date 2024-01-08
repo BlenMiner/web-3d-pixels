@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace PixelsServer
 {
-    class PixelsServerSession : WsSession
+    class PixelsServerSession : WsSession, ISendData, IReceiveData
     {
         private readonly OAuthSecrets m_secrets;
 
@@ -15,21 +15,35 @@ namespace PixelsServer
 
         private readonly RessourcesCache m_cache;
 
+        public event Action<byte[], int, int>? OnReceivedData;
+
+        private readonly SessionBroadcaster m_broadcaster;
+
         public PixelsServerSession(WsServer server, RessourcesCache cache, Database db, OAuthSecrets oauthSecrets) : base(server) 
         {
             m_secrets = oauthSecrets;
             m_database = db;
             m_cache = cache;
+
+            m_broadcaster = new SessionBroadcaster(this, this);
+            m_broadcaster.Register<MessageA>(OnMessageAReceived);
+            m_broadcaster.Register<MessageB>(OnMessageBReceived);
         }
+
+        private void OnMessageAReceived(MessageA b)
+        {
+            Logger.Log($"Received message A: {b.value}");
+        }
+
+        private void OnMessageBReceived(MessageB b)
+        {
+            Logger.Log($"Received message B: {b.value}");
+        }
+
 
         public override void OnWsConnected(HttpRequest request)
         {
             Console.WriteLine($"Chat WebSocket session with Id {Id} connected!");
-
-            // Send invite message
-            string message = "Please send a message or '!' to disconnect the client!";
-
-            SendBinaryAsync(message);
         }
 
         public override void OnWsDisconnected()
@@ -37,17 +51,14 @@ namespace PixelsServer
             Console.WriteLine($"Chat WebSocket session with Id {Id} disconnected!");
         }
 
+        public void Send(byte[] data, int offset, int size)
+        {
+            SendBinaryAsync(data, offset, size);
+        }
+
         public override void OnWsReceived(byte[] buffer, long offset, long size)
         {
-            string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
-            Console.WriteLine("Incoming: " + message);
-
-            // Multicast message to all connected sessions
-            ((WsServer)Server).MulticastBinary(buffer, offset, size);
-
-            // If the buffer starts with '!' the disconnect the current session
-            if (message == "!")
-                Close(1000);
+            OnReceivedData?.Invoke(buffer, (int)offset, (int)size);
         }
 
         protected override void OnError(SocketError error)

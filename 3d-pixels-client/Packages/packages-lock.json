@@ -151,6 +151,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "dev.riten.3dpixels": {
+      "version": "file:E:/3DPixels/web-3d-pixels/3d-pixels-server/Shared",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,

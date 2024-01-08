@@ -5,7 +5,10 @@ using JamesFrowen.SimpleWeb;
 
 public class NetworkClient : MonoBehaviour
 {
+    public event Action<ArraySegment<byte>> OnDataReceived;
+    
     public bool IsConnected { get; private set; }
+    
     private SimpleWebClient m_client;
     
     void Awake()
@@ -40,9 +43,7 @@ public class NetworkClient : MonoBehaviour
     {
         if (data.Array == null) return;
         
-        string message = Encoding.UTF8.GetString(data.Array, data.Offset, data.Count);
-
-        Debug.Log($"Data from Server: {message}");
+        OnDataReceived?.Invoke(data);
     }
 
     public void Connect(bool wss = false, string host = "localhost", int port = 8080)

@@ -20,6 +20,8 @@ public class GameBootstrapper : MonoBehaviour
         {
             Debug.LogWarning("ChatClient is not set");
         }
+        
+        Test.Speak();
     }
     
     private void OnDisable()
@@ -29,8 +31,8 @@ public class GameBootstrapper : MonoBehaviour
     }
 
     private void OnMessageSubmited(string message)
-    {
-        m_client.Send(message);
+    { 
+        Broadcaster.Send(new MessageA { value = 4269 });
     }
 
     private void Start()
