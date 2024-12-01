@@ -1,8 +1,8 @@
-name: rebuild-server
+name: rebuild-purr-balancer
 on: 
   push:
     branches: ['main']
-    paths: ['3d-pixels-server/**', 'www/**']
+    paths: ['PurrBalancer/**']
   workflow_dispatch:
 jobs:
 
@@ -13,17 +13,18 @@ jobs:
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: 3.81.160.12
-        username: ec2-user
-        key: ${{ secrets.EC2 }}
+        host: 159.69.180.67
+        username: root
+        key: ${{ secrets.SSH_KEY }}
         port: 22
         script: |
-          [ -d "web-3d-pixels" ] || git clone https://github.com/BlenMiner/web-3d-pixels.git
-          cd "web-3d-pixels/3d-pixels-server"
+          [ -d ${{ github.repository }} ] || git clone ${{ github.server_url }}/${{ github.repository }} PurrLay
+          cd PurrLay
           git reset --hard @{u}
           git clean -df
           git pull
-          sudo killall -9 3d-pixels-server
+          sudo killall -9 PurrBalancer
+          cd PurrBalancer
           dotnet build --property:Configuration=Release
-          sudo nohup ./bin/Release/net6.0/3d-pixels-server ${{ secrets.OAUTH_CLIENT_ID }} ${{ secrets.OAUTH_SECRET }} > /dev/null 2>&1 &
+          sudo nohup ./bin/Release/net8.0/PurrBalancer > /dev/null 2>&1 &
           exit
